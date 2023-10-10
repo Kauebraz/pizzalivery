@@ -24,7 +24,7 @@ export const ElementButton = styled.button`
     props.inverse &&
     `
     border-color: ${colors.commom.light};
-    background-color: ${colors.commom.light};
+    background-color: transparent;
     color: ${colors.commom.light};
   `}
 
@@ -32,5 +32,12 @@ export const ElementButton = styled.button`
     border-color: ${colors.primary.main};
     background-color: transparent;
     color: ${colors.primary.main};
+  }
+
+  &:disabled {
+    border-color: ${colors.text.dark};
+    background-color: transparent;
+    color: ${colors.text.dark};
+    cursor: not-allowed;
   }
 `

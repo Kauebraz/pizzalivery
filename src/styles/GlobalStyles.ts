@@ -112,7 +112,6 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   p {
-    margin-bottom: 16px;
     line-height: 1.3;
   }
 
