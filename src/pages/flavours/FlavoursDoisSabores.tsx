@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/button/Button";
 import { Layout } from "../../components/layout/Layout";
@@ -20,10 +20,10 @@ import {
 } from "./Flavours.styles";
 import { Title } from "../../components/title/Title";
 
-export default function Flavours() {
+export default function FlavoursDoisSabores() {
   const navigate = useNavigate();
   const { pizzaSize, pizzaFlavour, setPizzaFlavour } = useContext(OrderContext);
-  const [selQuant, setSelQuant] = useState({});
+  const [selFlavours, setSelFlavours] = useState([]);
   const flavoursOptions = [
     {
       id: "10",
@@ -75,82 +75,79 @@ export default function Flavours() {
     },
   ];
 
+
   const getPizzaFlavour = (id) => {
     return flavoursOptions.find((flavour) => flavour.id === id);
   };
+
 
   const handleBack = () => {
     navigate(routes.pizzaSize);
   };
 
-  const handleDecreaseClick = (event) => {
+
+
+  const handleNext = () => {
+    if (selFlavours.length === 2) {
+      const selFlavoursData = selFlavours.map((flavourId) =>
+        getPizzaFlavour(flavourId)
+      );
+      setPizzaFlavour(selFlavoursData);
+      navigate(routes.summary);
+    } else {
+      alert("Escolha dois sabores");
+    }
+  };
+  
+
+
+  const handleClick = (event) => {
     const id = event.target.id;
-    const newQuant = { ...selQuant };
-    if (newQuant[id] && newQuant[id] > 0) {
-      newQuant[id] -= 1;
-      setSelQuant(newQuant);
+    if (selFlavours.includes(id)) {
+      setSelFlavours((previousSelectedFlavours) =>
+      previousSelectedFlavours.filter((flavourId) => flavourId !== id)
+      );
+
+      
+    } else {
+      setSelFlavours((previousSelectedFlavours) => [...previousSelectedFlavours, id]);
     }
   };
 
-  const handleIncreaseClick = (event) => {
-    const id = event.target.id;
-    const newQuant = { ...selQuant };
-    newQuant[id] = (newQuant[id] || 0) + 1;
-    setSelQuant(newQuant);
-  };
 
   
 
-  const handleNext = () => {
-    const selFlavoursData = Object.keys(selQuant).reduce(
-      (flavours, id) => {
-        const pizzaFlavour = getPizzaFlavour(id);
-        const quantity = selQuant[id];
-        for (let i = 0; i < quantity; i++) {
-          flavours.push(pizzaFlavour);
-        }
-        return flavours;
-      },
-      []
-    );
-    setPizzaFlavour(selFlavoursData);
-    navigate(routes.summary);
-  };
+  
 
   useEffect(() => {
     if (pizzaFlavour && pizzaFlavour.length > 0) {
-      const quant = {};
-      pizzaFlavour.forEach((flavour) => {
-        quant[flavour.id] = (quant[flavour.id] || 0) + 1;
-      });
-      setSelQuant(quant);
+      setSelFlavours(pizzaFlavour.map((flavour) => flavour.id));
     }
   }, [pizzaFlavour]);
 
   return (
     <Layout>
+
       <Title tabIndex={0}>Agora escolha o sabor da sua pizza</Title>
+
       <FlavourContentWrapper>
         {flavoursOptions.map(({ id, image, name, description, price }) => (
-          <FlavourCard key={id} selected={selQuant[id] > 0}>
+          <FlavourCard key={id} selected={selFlavours.includes(id)}>
             <FlavourCardImage src={image} alt={name} />
             <FlavourCardTitle>{name}</FlavourCardTitle>
             <FlavourCardDescription>{description}</FlavourCardDescription>
+
             <FlavourCardPrice>
               {convertToCurrency(price[pizzaSize[0].slices])}
             </FlavourCardPrice>
-            <div>
-              <Button id={id} onClick={handleDecreaseClick}>
-                -
-              </Button>
-              {selQuant[id] || 0}
-              <Button id={id} onClick={handleIncreaseClick}>
-                +
-              </Button>
-            </div>
+            <Button id={id} onClick={handleClick}>
+              {selFlavours.includes(id) ? "Selecionado" : "Selecionar"}
+            </Button>
           </FlavourCard>
         ))}
+
       </FlavourContentWrapper>
+
 
       <FlavourActionWrapper>
         <Button inverse="inverse" onClick={handleBack}>

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/layout/Layout";
 import { routes } from "../../routes";
@@ -17,75 +17,120 @@ import {
 } from "./Summary.style";
 import { Button } from "../../components/button/Button";
 
+interface PizzaFlavour {
+  id: string;
+  name: string;
+  image: string;
+  price: { [key: string]: number };
+}
+
 export default function Summary() {
   const navigate = useNavigate();
+
   const { pizzaSize, pizzaFlavour, setPizzaOrder } = useContext(OrderContext);
-  const [summaryData, setSummaryData] = useState([]);
-  const [summaryAmount, setSummaryAmount] = useState(0);
+  const [summaryAmount, setSummaryAmount] = useState<number>(0);
+  const [summaryData, setSummaryData] = useState<PizzaFlavour[]>([]);
+  
+  
+
 
   const handleBack = () => {
     navigate(routes.pizzaFlavour);
-  }
+  };
+
 
   const handleNext = () => {
-    // Aqui, você pode criar um payload para todos os sabores selecionados
-    const payload = pizzaFlavour.map((flavour) => ({
+    const payload = {
       item: {
-        name: flavour.name,
-        image: flavour.image,
+        name: summaryData.map((item) => `${item.quant}x ${item.name}`).join(", "),
         size: pizzaSize[0].text,
         slices: pizzaSize[0].slices,
-        value: flavour.price[pizzaSize[0].slices],
+        value: summaryAmount,
       },
-      total: flavour.price[pizzaSize[0].slices],
-    }));
+    };
+
+
+  
 
     setPizzaOrder(payload);
     navigate(routes.checkout);
-  }
+  };
+
+
+
+  const handleRemove = (id) => {
+    const updtSummaryData = summaryData.filter((item) => item.id !== id);
+    setSummaryData(updtSummaryData);
+
+    const updatedAmount = updtSummaryData.reduce((total, flavour) => {
+      return total + flavour.price[pizzaSize[0].slices] * flavour.quant;
+    }, 0);
+
+
+    setSummaryAmount(updatedAmount);
+  };
+
+
 
   useEffect(() => {
-    if (!pizzaFlavour) {
-      return navigate(routes.pizzaSize);
+    if (!pizzaFlavour || !pizzaSize) {
+      return navigate(routes.pizzaFlavour);
     }
 
-    if (!pizzaSize) {
-      return navigate(routes.home);
-    }
-
-    const summaryData = pizzaFlavour.map((flavour) => ({
-      text: pizzaSize[0].text,
-      slices: pizzaSize[0].slices,
-      name: flavour.name,
-      price: flavour.price[pizzaSize[0].slices],
-      image: flavour.image,
+    const selectedFlavours = pizzaFlavour.map((flavour) => ({
+      ...flavour,
+      quant: pizzaFlavour.filter((f) => f.id === flavour.id).length,
     }));
 
-    setSummaryData(summaryData);
-  }, []);
+    
+    const summaryMap = new Map();
+    for (const flavour of selectedFlavours) {
+      if (summaryMap.has(flavour.id)) {
+        summaryMap.get(flavour.id).quant += 1;
+      } else {
+        summaryMap.set(flavour.id, { ...flavour, quant: 1 });
+      }
+    }
 
-  useEffect(() => {
-    // Calcule o valor total somando os preços de todos os sabores selecionados
-    const totalAmount = summaryData.reduce(
-      (total, flavour) => total + flavour.price,
-      0
-    );
 
+    const summaryArray = Array.from(summaryMap.values());
+    
+
+    const totalAmount = summaryArray.reduce((total, flavour) => {
+      return total + flavour.price[pizzaSize[0].slices] * flavour.quant;
+    }, 0);
+
+
+
+
+    setSummaryData(summaryArray);
     setSummaryAmount(totalAmount);
-  }, [summaryData]);
+  }, [pizzaFlavour, pizzaSize]);
+
+
+
+
 
   return (
     <Layout>
       <Title tabIndex={0}>Resumo do pedido</Title>
       <SummaryContentWrapper>
-        {summaryData.map((item, index) => (
+        {summaryData.map((data, index) => (
           <SummaryDetails key={index}>
-            <SummaryImage src={item.image} alt="" />
-            <SummaryTitle>{item.name}</SummaryTitle>
+            <SummaryImage src={data.image} alt={data.name} />
+            <SummaryTitle>{data.name}</SummaryTitle>
             <SummaryDescription>
-              {item.text} ({item.slices} pedaços)
+              {data.quant}x {pizzaSize[0].text} ({pizzaSize[0].slices} pedaços)
             </SummaryDescription>
-            <SummaryPrice>{convertToCurrency(item.price)}</SummaryPrice>
+            <SummaryPrice>
+              {convertToCurrency(data.price[pizzaSize[0].slices] * data.quant)}
+            </SummaryPrice>
+
+            <Button
+              onClick={() => handleRemove(data.id)}
+              style={{ marginLeft: "1rem" }}
+            >Remover</Button>
+
           </SummaryDetails>
         ))}
         <SummaryAmount>
@@ -93,6 +138,7 @@ export default function Summary() {
         </SummaryAmount>
       </SummaryContentWrapper>
       <SummaryActionWrapper>
+        
         <Button inverse="inverse" onClick={handleBack}>
           Voltar
         </Button>
